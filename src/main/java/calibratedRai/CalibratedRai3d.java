@@ -25,7 +25,7 @@ public class CalibratedRai3d<T extends RealType<T> & NativeType<T>>
 
 	private final RandomAccessibleInterval<T> img;
 	
-	private final RealInterval scaledInterval;
+	private final Interval scaledInterval;
 
 	private final AffineTransform3D scaleXfm;
 	
@@ -55,6 +55,11 @@ public class CalibratedRai3d<T extends RealType<T> & NativeType<T>>
 		return RealViews.transform(
 				Views.interpolate( Views.extendZero( img ), new NLinearInterpolatorFactory< T >()),
 				scaleXfm );
+	}
+	
+	public Interval getTransformedInterval()
+	{
+		return scaledInterval;
 	}
 	
 	public RandomAccessibleInterval<T> toOriginalResolution( RealRandomAccessible<T> rra )
