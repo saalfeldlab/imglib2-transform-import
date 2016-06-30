@@ -135,6 +135,21 @@ public class ANTSDeformationField implements InvertibleRealTransform
 		this.resolution = other.resolution;
 	}
 	
+	public RealRandomAccessible< FloatType > getDefField()
+	{
+		return defField;
+	}
+	
+	public Interval getDefInterval()
+	{
+		return defInterval;
+	}
+	
+	public double[] getResolution()
+	{
+		return resolution;
+	}
+	
 	private void load( File f ) throws FormatException, IOException
 	{
 		ImagePlus ip = NiftiIo.readNifti( f );
@@ -162,22 +177,19 @@ public class ANTSDeformationField implements InvertibleRealTransform
 		System.out.println( ip.getCalibration().pixelDepth );
 
 		AffineTransform3D scaleXfm = new AffineTransform3D();
-		scaleXfm.set( 1 / ip.getCalibration().pixelWidth,  0, 0 );
-		scaleXfm.set( 1 / ip.getCalibration().pixelHeight, 1, 1 );
-		scaleXfm.set( 1 / ip.getCalibration().pixelDepth,  2, 2 );
+		scaleXfm.set( ip.getCalibration().pixelWidth,  0, 0 );
+		scaleXfm.set( ip.getCalibration().pixelHeight, 1, 1 );
+		scaleXfm.set( ip.getCalibration().pixelDepth,  2, 2 );
 		
 		defFieldAccess = RealViews.affine(
 				Views.interpolate( Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >()),
-				new AffineTransform4DRepeated3D( scaleXfm.inverse() ) ).realRandomAccess();
-		
-//		
+				new AffineTransform4DRepeated3D( scaleXfm ) ).realRandomAccess();
+
 //		defField = RealViews.affine(
 //				Views.interpolate( Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >()),
 //				scaleXfm );
 
 //		defField = Views.interpolate( Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >());
-		
-
 	}
 
 	@Override
@@ -213,7 +225,7 @@ public class ANTSDeformationField implements InvertibleRealTransform
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	@Override
 	public void applyInverse( double[] source, double[] target )
 	{
@@ -254,18 +266,85 @@ public class ANTSDeformationField implements InvertibleRealTransform
 	@Override
 	public void applyInverse( RealPositionable source, RealLocalizable target )
 	{
+		
+//		System.out.println("applyInverse rp rl");
 		for( int d = 0; d < target.numDimensions(); d++ )
 			defFieldAccess.setPosition( target.getDoublePosition( d ), d );
 
 		defFieldAccess.setPosition( 0.0, lastDim );
+		double[] newpos = new double[ 3 ];
 		for( int d = 0; d < numDimOut; d++ )
 		{
-			source.setPosition( target.getDoublePosition( d ) + defFieldAccess.get().getRealDouble(), d );
+			System.out.println( "def " + d + " - " + defFieldAccess.get() );
+//			source.setPosition( target.getDoublePosition( d ) + defFieldAccess.get().getRealDouble(), d );
+
+			newpos[ d ] = target.getDoublePosition( d ) + defFieldAccess.get().getRealDouble();
+			source.setPosition( newpos[ d ], d );
+
 			defFieldAccess.fwd( lastDim );
 		}
-//		System.out.println( "target: " + target );
-//		System.out.println( "source: " + source );
+
+		if( target.getDoublePosition( 0 ) != newpos[ 0 ] ||
+			target.getDoublePosition( 1 ) != newpos[ 1 ] ||
+			target.getDoublePosition( 2 ) != newpos[ 2 ] )
+		{
+			System.out.println( "target: " + target );
+			System.out.println( "source: " + source );
+		}
 	}
+
+//	@Override
+//	public void applyInverse( double[] source, double[] target )
+//	{
+//		for( int d = 0; d < target.length; d++ )
+//			defFieldAccess.setPosition( target[ d ], d);
+//
+//		defFieldAccess.setPosition( 0.0, lastDim );
+//		
+//		System.arraycopy( target, 0, source, 0, source.length );
+//		for( int d = 0; d < numDimOut; d++ )
+//		{
+//			System.out.println( "def " + d + " - " + defFieldAccess.get() );
+//			source[ d ] += defFieldAccess.get().getRealDouble();
+//			defFieldAccess.fwd( lastDim );
+//		}
+//		System.out.println( "target: " + XfmUtils.printArray( target ));
+//		System.out.println( "source: " + XfmUtils.printArray( source ));
+//	}
+//
+//	@Override
+//	public void applyInverse( float[] source, float[] target )
+//	{
+//		for( int d = 0; d < target.length; d++ )
+//			defFieldAccess.setPosition( target[ d ], d);
+//
+//		defFieldAccess.setPosition( 0.0, lastDim );
+//		
+//		System.arraycopy( target, 0, source, 0, source.length );
+//		for( int d = 0; d < numDimOut; d++ )
+//		{
+//			source[ d ] += defFieldAccess.get().getRealDouble();
+//			defFieldAccess.fwd( lastDim );
+//		}
+////		System.out.println( "target: " + XfmUtils.printArray( target ));
+////		System.out.println( "source: " + XfmUtils.printArray( source ));
+//	}
+//
+//	@Override
+//	public void applyInverse( RealPositionable source, RealLocalizable target )
+//	{
+//		for( int d = 0; d < target.numDimensions(); d++ )
+//			defFieldAccess.setPosition( target.getDoublePosition( d ), d );
+//
+//		defFieldAccess.setPosition( 0.0, lastDim );
+//		for( int d = 0; d < numDimOut; d++ )
+//		{
+//			source.setPosition( target.getDoublePosition( d ) + defFieldAccess.get().getRealDouble(), d );
+//			defFieldAccess.fwd( lastDim );
+//		}
+////		System.out.println( "target: " + target );
+////		System.out.println( "source: " + source );
+//	}
 
 	@Override
 	public InvertibleRealTransform inverse()
