@@ -41,6 +41,11 @@ public class CalibratedRai3d<T extends RealType<T> & NativeType<T>>
 		scaledInterval = largestIntervalFromRealInterval( img, scaleXfm );
 	}
 	
+	public AffineTransform3D getScalingTransform()
+	{
+		return scaleXfm;
+	}
+	
 	public static double[] resolutions( ImagePlus imp )
 	{
 		return new double[]{ 
@@ -65,16 +70,26 @@ public class CalibratedRai3d<T extends RealType<T> & NativeType<T>>
 	public RandomAccessibleInterval<T> toOriginalResolution( RealRandomAccessible<T> rra )
 	{
 		return Views.interval( Views.raster( 
-					RealViews.transform( rra, scaleXfm.inverse() )), 
+				RealViews.transform( rra, scaleXfm.inverse() )), 
 				img);
+	}
+	
+	public RandomAccessibleInterval<T> toWholeResolution( RealRandomAccessible<T> rra )
+	{
+		return Views.interval( Views.raster( rra ), 
+				scaledInterval );
 	}
 	
 	public static AffineTransform3D getScaleXfm( double[] resolutions )
 	{
+		System.out.println( "resolutions: " + 
+				resolutions[ 0 ] + " " +
+				resolutions[ 1 ] + " " + 
+				resolutions[ 2 ] );
 		AffineTransform3D scaleXfm = new AffineTransform3D();
-		scaleXfm.set( resolutions[ 0 ],  0, 0 );
+		scaleXfm.set( resolutions[ 0 ], 0, 0 );
 		scaleXfm.set( resolutions[ 1 ], 1, 1 );
-		scaleXfm.set( resolutions[ 2 ],  2, 2 );
+		scaleXfm.set( resolutions[ 2 ], 2, 2 );
 		return scaleXfm;
 	}
 	
