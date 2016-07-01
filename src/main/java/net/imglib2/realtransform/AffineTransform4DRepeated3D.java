@@ -13,6 +13,11 @@ public class AffineTransform4DRepeated3D implements AffineGet, Concatenable< Aff
 	{
 		this.xfm = xfm;
 	}
+	
+	public AffineTransform3D getTransform()
+	{
+		return xfm;
+	}
 
 	@Override
 	public void applyInverse( double[] source, double[] target )
