@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import bdv.util.Bdv;
-import bdv.util.BdvFunctions;
-import bdv.util.BdvOptions;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
@@ -435,9 +432,9 @@ public class ANTSDeformationField implements InvertibleRealTransform
 //		System.out.println( "nnz res: " + numNonZero( res ) );
 
 
-		BdvOptions bdvopts = BdvOptions.options();
-		bdvopts.numRenderingThreads( 8 );
-		Bdv bdvRes = BdvFunctions.show( res, "img", bdvopts );
+//		BdvOptions bdvopts = BdvOptions.options();
+//		bdvopts.numRenderingThreads( 8 );
+//		Bdv bdvRes = BdvFunctions.show( res, "img", bdvopts );
 
 //		IJ.save( ImageJFunctions.wrap( res, "res" ), "/data-ssd/john/antsDefFieldTests/test_cyl_exp0029_2a_xfmImglib_small.tif" );
 
