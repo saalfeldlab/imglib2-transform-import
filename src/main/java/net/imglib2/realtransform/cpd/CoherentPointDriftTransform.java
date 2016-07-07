@@ -83,6 +83,10 @@ public class CoherentPointDriftTransform implements InvertibleRealTransform
 	 * point.
 	 *
 	 * Stores the result in the input array 'res'. Does not validate inputs.
+	 * 
+	 * @param i index
+	 * @param pt point
+	 * @param res result
 	 */
 	protected void displacement( final int i, final double[] pt, final double[] res )
 	{
