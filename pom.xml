@@ -25,18 +25,6 @@
 
 	<dependencies>
 		<!-- ImgLib2 dependencies -->
-		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2-roi</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2-realtransform</artifactId>
-		</dependency>
 
 		<!-- ImageJ dependencies -->
 		<dependency>
@@ -57,23 +45,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>
-				com.googlecode.efficient-java-matrix-library
-			</groupId>
-			<artifactId>ejml</artifactId>
-			<version>0.24</version>
-		</dependency>
-		<dependency>
-			<groupId>jitk</groupId>
-			<artifactId>jitk-tps</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>bio-formats_plugins</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2-ij</artifactId>
+			<groupId>sc.fiji</groupId>
+			<artifactId>bigwarp_fiji</artifactId>
 		</dependency>
 	</dependencies>
 </project>
