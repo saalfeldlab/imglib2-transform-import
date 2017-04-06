@@ -25,13 +25,13 @@ import net.imglib2.view.Views;
 public class AntsBigWarpTransform
 {
  
-	/* Args to test the template by itself:
-	 * 
+	// Args to test the template by itself:
+	 /* 
 		/nobackup/saalfeld/john/wong_alignment/brains_2016Mar/groupwiseRegSpacing/MYtemplate.tif
 		/nobackup/saalfeld/john/wong_alignment/data/frulexAaligned-C3.tif
 		/groups/saalfeld/home/bogovicj/projects/wong_reg/antsTemplate2FruTemplateBigwarp/landmarks_20160701.csv
-	 */
-
+	 
+	*/
 	/* Args to test a flye example:
 	 * 
 		/nobackup/saalfeld/john/wong_alignment/brains_2016Mar/groupwiseRegSpacing/MY20160301_r3_ss2527lc10_frup65_rnai_flye_00002_baseline_spacing.nii
@@ -40,7 +40,6 @@ public class AntsBigWarpTransform
 		/nobackup/saalfeld/john/wong_alignment/brains_2016Mar/groupwiseRegSpacing/MY20160301_r3_ss2527lc10_frup65_rnai_flye_00002_baseline_spacingAffine.mat
 		/nobackup/saalfeld/john/wong_alignment/brains_2016Mar/groupwiseRegSpacing/MY20160301_r3_ss2527lc10_frup65_rnai_flye_00002_baseline_spacingWarp.nii
 	 */
-
 	/* Args to test a flya example:
 	 * 
 		/nobackup/saalfeld/john/wong_alignment/brains_2016Mar/groupwiseRegSpacing/MY20160301_r3_ss2527lc10_frup65_flya_00001_baseline_spacing.nii
@@ -52,29 +51,44 @@ public class AntsBigWarpTransform
 	
 	public static void main( String[] args ) throws FormatException, IOException
 	{
-		File srcF = new File( args[0] );
+		System.out.println("Started AntsBigWarpTransform111");
+		File srcF  = new File( args[0] );
 		File itvlF = new File( args[1] );
 		File tpsF = new File( args[2] );
+		String newdirfile = new String(args[3]);
 
 		File affineF = null;
 		File defF = null;
 
-		if( args.length > 3 )
-			affineF = new File( args[3] );
-
 		if( args.length > 4 )
-			defF = new File( args[4] );
+			affineF = new File( args[4] );
+
+		if( args.length > 5 )
+			defF = new File( args[5] );
 
 
 		/* 
 		 * READ THE IMAGE
 		 */
 		ImagePlus ip = read( srcF );
-		Img<?> interval = ImageJFunctions.wrap( read( itvlF ));
+		ImagePlus itvl = read( itvlF );
+		double[] res = new double[] {
+				itvl.getCalibration().pixelWidth,
+				itvl.getCalibration().pixelHeight,
+				itvl.getCalibration().pixelDepth
+		};
+	
+		AffineTransform3D outputCalibration = new AffineTransform3D();
+		outputCalibration.set( res[ 0 ], 0, 0 );
+		outputCalibration.set( res[ 1 ], 1, 1 );
+		outputCalibration.set( res[ 2 ], 2, 2 );
+		System.out.println( "output calibration: " + outputCalibration );
+	
+		Img<?> interval = ImageJFunctions.wrap( itvl );
 
 		CalibratedRai3d<FloatType> crai = new CalibratedRai3d<FloatType>( ip, new FloatType() );
 		RealRandomAccessible< FloatType > imgrra = crai.getRealRandomAccessible();
-		
+	
 		/* 
 		 * READ THE TRANSFORM
 		 */
@@ -103,6 +117,7 @@ public class AntsBigWarpTransform
 			totalXfm.add( df );
 
 		totalXfm.add( tpsInvXfm );
+		totalXfm.add( outputCalibration.inverse() );
 		
 		/*
 		 * Render the image
@@ -111,11 +126,12 @@ public class AntsBigWarpTransform
 				 RealViews.transform( imgrra, totalXfm )), 
 				 interval);
 		
-//		Bdv bdv = BdvFunctions.show( output, "output" );
-
 		System.out.println( "writing" );
-		String outname = "MY20160301_r3_ss2527lc10_frup65_flya_00001_baseline_spacing_toTemplate.tif";
-		IJ.save( ImageJFunctions.wrap( output, "xfm" ), "/groups/saalfeld/public/ffc/" + outname );
+		ImagePlus ipout = ImageJFunctions.wrap( output, "xfm" );
+		ipout.getCalibration().pixelWidth = itvl.getCalibration().pixelWidth;
+		ipout.getCalibration().pixelHeight = itvl.getCalibration().pixelHeight;
+		ipout.getCalibration().pixelDepth = itvl.getCalibration().pixelDepth;
+		IJ.save( ipout, newdirfile);
 
 		System.out.println("done");
 	}
