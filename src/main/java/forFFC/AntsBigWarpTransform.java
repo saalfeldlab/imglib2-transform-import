@@ -26,14 +26,23 @@ import net.imglib2.RealRandomAccessible;
 import net.imglib2.exception.ImgLibException;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.img.imageplus.ByteImagePlus;
 import net.imglib2.img.imageplus.FloatImagePlus;
+import net.imglib2.img.imageplus.ImagePlusImg;
 import net.imglib2.img.imageplus.ImagePlusImgs;
+import net.imglib2.img.imageplus.ShortImagePlus;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.realtransform.InvertibleRealTransformSequence;
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.ants.ANTSDeformationField;
 import net.imglib2.realtransform.ants.ANTSLoadAffine;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.ByteType;
+import net.imglib2.type.numeric.integer.ShortType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.IntervalView;
@@ -92,6 +101,60 @@ public class AntsBigWarpTransform
 		 */
 		ImagePlus ip = read( srcF );
 		ImagePlus itvl = read( itvlF );
+
+
+		if( ip.getBitDepth() == 8 )
+		{
+			System.out.println( "BYTE" );
+			CalibratedRai3d< ByteType > crai = new CalibratedRai3d< ByteType >( ip, new ByteType() );
+			ImagePlusImg< ByteType, ? > impi = ImagePlusImgs.bytes( Intervals.dimensionsAsLongArray( ImageJFunctions.wrap( itvl ) ) );
+			execute( crai, impi, itvl, affineF, defF, tpsF, newdirfile, nThreads );
+		}
+		else if( ip.getBitDepth() == 16 )
+		{
+			System.out.println( "SHORT" );
+			CalibratedRai3d< ShortType > crai = new CalibratedRai3d< ShortType >( ip, new ShortType() );
+			ShortImagePlus< ShortType > impi = ImagePlusImgs.shorts( Intervals.dimensionsAsLongArray( ImageJFunctions.wrap( itvl ) ) );
+			execute( crai, impi, itvl, affineF, defF, tpsF, newdirfile, nThreads );
+		}
+		else if( ip.getBitDepth() == 32 )
+		{
+			System.out.println( "FLOAT" );
+			CalibratedRai3d< FloatType > crai = new CalibratedRai3d< FloatType >( ip, new FloatType() );
+			FloatImagePlus< FloatType > impi = ImagePlusImgs.floats( Intervals.dimensionsAsLongArray( ImageJFunctions.wrap( itvl ) ) );
+			execute( crai, impi, itvl, affineF, defF, tpsF, newdirfile, nThreads );
+		}
+		else
+		{
+			System.err.println( "unrecognized type");
+			return;
+		}
+
+		System.out.println("done");
+	}
+
+	public static ImagePlus read( File f ) throws FormatException, IOException
+	{
+		ImagePlus ip;
+		if( f.getName().endsWith( "nii" ))
+			ip = NiftiIo.readNifti( f );
+		else
+			ip = IJ.openImage( f.getAbsolutePath() );
+
+		return ip;
+	}
+
+	public static < T extends RealType< T > & NativeType<T>> void execute( 
+			CalibratedRai3d< T > crai,
+			ImagePlusImg< T, ? > ipimg,
+			ImagePlus itvl,
+			File affineF, File defF, File tpsF,
+			String newdirfile,
+			int nThreads ) throws IOException, FormatException, ImgLibException
+	{
+
+		RealRandomAccessible< T > imgrra = crai.getRealRandomAccessible();
+
 		double[] res = new double[] {
 				itvl.getCalibration().pixelWidth,
 				itvl.getCalibration().pixelHeight,
@@ -102,13 +165,7 @@ public class AntsBigWarpTransform
 		outputCalibration.set( res[ 0 ], 0, 0 );
 		outputCalibration.set( res[ 1 ], 1, 1 );
 		outputCalibration.set( res[ 2 ], 2, 2 );
-		System.out.println( "output calibration: " + outputCalibration );
-	
-		Img<?> interval = ImageJFunctions.wrap( itvl );
 
-		CalibratedRai3d<FloatType> crai = new CalibratedRai3d<FloatType>( ip, new FloatType() );
-		RealRandomAccessible< FloatType > imgrra = crai.getRealRandomAccessible();
-	
 		/* 
 		 * READ THE TRANSFORM
 		 */
@@ -127,7 +184,7 @@ public class AntsBigWarpTransform
 		ltm.load( tpsF );
 		TpsTransformWrapper tpsInvXfm = new TpsTransformWrapper( 3 );
 		tpsInvXfm.setTps( ltm.getTransform() );
-		
+
 		// Concatenate all the transforms
 		InvertibleRealTransformSequence totalXfm = new InvertibleRealTransformSequence();
 		if( affine != null )
@@ -142,11 +199,12 @@ public class AntsBigWarpTransform
 		/*
 		 * Render the image
 		 */
-		IntervalView< FloatType > output = Views.interval( Views.raster( 
+		IntervalView< T > output = Views.interval( Views.raster( 
 				 RealViews.transform( imgrra, totalXfm )), 
-				 interval);
+				 ipimg);
 
-		FloatImagePlus< FloatType > ipimg = ImagePlusImgs.floats( Intervals.dimensionsAsLongArray( interval ) );
+
+//		ImagePlusImg< T, ? > ipimg = getOutputIpi( ip, interval );
 		System.out.println("copyting with " + nThreads + " threads.");
 		copyToImageStack( output, ipimg, nThreads );
 		
@@ -156,21 +214,8 @@ public class AntsBigWarpTransform
 		ipout.getCalibration().pixelHeight = itvl.getCalibration().pixelHeight;
 		ipout.getCalibration().pixelDepth = itvl.getCalibration().pixelDepth;
 		IJ.save( ipout, newdirfile);
-
-		System.out.println("done");
 	}
 
-	public static ImagePlus read( File f ) throws FormatException, IOException
-	{
-		ImagePlus ip;
-		if( f.getName().endsWith( "nii" ))
-			ip = NiftiIo.readNifti( f );
-		else
-			ip = IJ.openImage( f.getAbsolutePath() );
-		
-		return ip;
-	}
-	
 	public static < T extends NumericType<T> > RandomAccessibleInterval<T> copyToImageStack( 
 			final RandomAccessible< T > ra,
 			final RandomAccessibleInterval<T> target,
