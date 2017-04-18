@@ -26,7 +26,7 @@ public class NiftiIo
 	public static ImagePlus readNifti( File f ) throws FormatException, IOException
 	{
 		AntsDefNiftiReader reader = new AntsDefNiftiReader();
-		reader.setMetadataOptions( new DefaultMetadataOptions( MetadataLevel.MINIMUM ));
+		//reader.setMetadataOptions( new DefaultMetadataOptions( MetadataLevel.MINIMUM ));
 		reader.setId( f.getAbsolutePath() );
 
 		int width = reader.getSizeX();
