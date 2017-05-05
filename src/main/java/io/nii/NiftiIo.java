@@ -9,8 +9,10 @@ import loci.formats.in.DefaultMetadataOptions;
 import loci.formats.in.MetadataLevel;
 import loci.formats.in.NiftiReader;
 import loci.plugins.util.ImageProcessorReader;
+import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Util;
 import ij.IJ;
 import ij.ImagePlus;
@@ -35,10 +37,11 @@ public class NiftiIo
 		int timepts = reader.getSizeT();
 		int channels = reader.getSizeC();
 		int imgCount = reader.getImageCount();
-		System.out.println( "img count" + imgCount );
-		System.out.println("timepts " + timepts  );
-		System.out.println("depth " + depth  );
-		System.out.println("channels " + channels  );
+		System.out.println( "loading nii: " + f );
+//		System.out.println( "img count" + imgCount );
+//		System.out.println("timepts " + timepts  );
+//		System.out.println("depth " + depth  );
+//		System.out.println("channels " + channels  );
 		
 		if( timepts > 1 && channels == 1 )
 		{
@@ -66,11 +69,13 @@ public class NiftiIo
 //			System.out.println( "resz ");
 			res[ 2 ] = (Double)(meta.get( KEY_ZRES ));
 		}
+		System.out.println( "res " + res[ 0 ] + " " + res[ 1 ] + " " + res[ 2 ]);
 		
 		ImageProcessorReader ipr = new ImageProcessorReader( reader );
 		ImageStack stack = new ImageStack( width, height );
 		for ( int z = 0; z < imgCount; z++ )
 		{
+		//	System.out.println( "reading section " + z + " of " + imgCount );
 			ImageProcessor[] processors = ipr.openProcessors( z );
 			stack.addSlice( processors[ 0 ] );
 		}
@@ -85,7 +90,8 @@ public class NiftiIo
 		ip.getCalibration().pixelWidth  = res[ 0 ];
 		ip.getCalibration().pixelHeight = res[ 1 ];
 		ip.getCalibration().pixelDepth  = res[ 2 ];
-
+		
+		System.out.println( "finished reading nii");
 		return ip;
 	
 	}
@@ -95,15 +101,32 @@ public class NiftiIo
 //		String niipath = "/groups/saalfeld/home/bogovicj/projects/flyChemStainAtlas/ants_groundTruth/groupwise_all_884/ALL-F-A1_TileConfiguration_lensrepaired.nii.gz";
 		//String niipath = "/groups/saalfeld/home/bogovicj/projects/flyChemStainAtlas/ants_groundTruth/NEW_groupwise_all-flip_884/ALLF-M-A4_TileConfiguration_lensWarp-mipav.nii.gz";
 		//String niipath = "/nrs/saalfeld/john/projects/flyChemStainAtlas/take5_groupwise_template_442/all-flip/ALLF-M-I2_TileConfiguration_lens_registered_down442Warp.nii.gz";
-		String niipath = "/data-ssd/john/ALLF-F-A1_TileConfiguration_lens.registered_down_flipHRWarp.nii";
+		//String niipath = "/data-ssd/john/ALLF-F-A1_TileConfiguration_lens.registered_down_flipHRWarp.nii";
+		//String niipath = "/nrs/saalfeld/john/projects/flyChemStainAtlas/take5_groupwise_template_442/all-flip-r1p5/ALLF-F-C1_TileConfiguration_lens.registered_down_flipHRWarp.nii";
+		String niipath = "/data-ssd/john/ALL-M-H3_TileConfiguration_lensWarp.nii";
+
 		ImagePlus ip = readNifti( new File( niipath ));
 //		ImagePlus ip = myReadNifti( new File( niipath ));
 		System.out.println( ip );
-		IJ.save( ip, "/data-ssd/john/ALLF-F-A1.tif" );
 		
-		Img<?> img = ImageJFunctions.wrap( ip );
+		//ip.show();
+
+	//	IJ.save( ip, "/data-ssd/john/ALLF-F-A1.tif" );
 		
+		Img<FloatType> img = ImageJFunctions.wrap( ip );
 		System.out.println( Util.printInterval( img ));
+		
+		Cursor< FloatType > c = img.cursor();
+		while( c.hasNext() )
+			if ( c.next().get() > 0 )
+			{
+				System.out.println("found a value > 0 ");
+				break;
+			}
+
+
+		
+		//Bdv bdv = BdvFunctions.show( img, "ants def field" );
 		
 //		ImagePlus[] ip = BF.openImagePlus( niipath );
 //		System.out.println( ip );
