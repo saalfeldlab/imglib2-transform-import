@@ -15,6 +15,24 @@ import net.imglib2.realtransform.AffineTransform3D;
  */
 public class ANTSLoadAffine
 {
+	public static String toITK( AffineTransform3D xfm )
+	{
+		StringBuffer out = new StringBuffer();
+		out.append("#Insight Transform File V1.0\n");
+		out.append("#Transform 0\n");
+		out.append("Transform: MatrixOffsetTransformBase_double_3_3\n");
+
+		out.append( String.format( "Parameters: %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				xfm.get( 0, 0 ), xfm.get( 0, 1 ), xfm.get( 0, 2 ),
+				xfm.get( 1, 0 ), xfm.get( 1, 1 ), xfm.get( 1, 2 ),
+				xfm.get( 2, 0 ), xfm.get( 2, 1 ), xfm.get( 0, 2 ),
+				xfm.get( 0, 3 ), xfm.get( 1, 3 ), xfm.get( 2, 3 ) ));
+
+		// the mtx takes care of the centering / un-centering, so we can set center to zero
+		out.append( "FixedParameters: 0.0 0.0 0.0" );
+
+		return out.toString();
+	}
 
 	public static AffineTransform3D loadAffine( String filePath ) throws IOException
 	{
