@@ -16,8 +16,73 @@ import net.imglib2.realtransform.AffineTransform3D;
 public class ANTSLoadAffine
 {
 
-	// ConvertTransformFile 3 --hm <sourcefile> <destfile.mat>
 	public static AffineTransform3D loadAffine( String filePath ) throws IOException
+	{
+
+		if ( filePath.endsWith( "mat" ) )
+			return loadAffineMat( filePath );
+		else if ( filePath.endsWith( "txt" ) )
+			return loadAffineTxt( filePath );
+		else
+			return null;
+	}
+
+	public static AffineTransform3D loadAffineTxt( String filePath ) throws IOException
+	{
+		BufferedReader reader = new BufferedReader(
+				new FileReader( new File( filePath ) ) );
+		String line = null;
+
+		double[] matrix = null;
+		double[] center = null;
+		while ( (line = reader.readLine()) != null )
+		{
+			if ( line.startsWith( "Parameters:" ) )
+			{
+				matrix = parametersNamed( line );
+
+			} else if ( line.startsWith( "FixedParameters:" ) )
+			{
+				center = parametersNamed( line );
+			}
+		}
+		reader.close();
+
+		AffineTransform3D affine = fromItkParameters( matrix );
+
+		AffineTransform3D invCentering = new AffineTransform3D();
+		invCentering.set( center[ 0 ], 0, 3 );
+		invCentering.set( center[ 1 ], 1, 3 );
+		invCentering.set( center[ 2 ], 2, 3 );
+
+		AffineTransform3D centering = new AffineTransform3D();
+		centering.set( -center[ 0 ], 0, 3 );
+		centering.set( -center[ 1 ], 1, 3 );
+		centering.set( -center[ 2 ], 2, 3 );
+
+		affine = affine.concatenate( centering );
+		affine = affine.preConcatenate( invCentering );
+
+		return affine;
+	}
+
+	/**
+	 * This is necessary since itk's convention differs from imglib2's
+	 * @return
+	 */
+	public static AffineTransform3D fromItkParameters( double[] parameters )
+	{
+		AffineTransform3D affine = new AffineTransform3D();
+		affine.set( 
+				parameters[0], parameters[1], parameters[2], parameters[9], 
+				parameters[3], parameters[4], parameters[5], parameters[10], 
+				parameters[6], parameters[7], parameters[8], parameters[11] );
+
+		return affine;
+	}
+
+	// ConvertTransformFile 3 --hm <sourcefile> <destfile.mat>
+	public static AffineTransform3D loadAffineMat( String filePath ) throws IOException
 	{
 		if ( !filePath.endsWith( "mat" ) )
 		{
@@ -61,6 +126,22 @@ public class ANTSLoadAffine
 
 		for ( int i = 0; i < splitLine.length; i++ )
 			out[ i ] = Double.parseDouble( splitLine[ i ] );
+
+		return out;
+	}
+
+	/*
+	 * Skips the first element in the line because its a name
+	 */
+	private static double[] parametersNamed( String paramLine )
+	{
+		String[] splitLine = paramLine.split( " " );
+		// System.out.println( splitLine[ 0 ]);
+
+		double[] out = new double[ splitLine.length - 1 ];
+
+		for ( int i = 1; i < splitLine.length; i++ )
+			out[ i - 1 ] = Double.parseDouble( splitLine[ i ] );
 
 		return out;
 	}
