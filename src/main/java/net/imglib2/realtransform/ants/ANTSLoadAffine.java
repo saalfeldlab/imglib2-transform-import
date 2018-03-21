@@ -66,7 +66,12 @@ public class ANTSLoadAffine
 		}
 		reader.close();
 
-		AffineTransform3D affine = fromItkParameters( matrix );
+		return loadAffineParams( matrix, center );
+	}
+	
+	public static AffineTransform3D loadAffineParams( final double[] matrixItk, final double[] center )
+	{
+		AffineTransform3D affine = fromItkParameters( matrixItk );
 
 		AffineTransform3D invCentering = new AffineTransform3D();
 		invCentering.set( center[ 0 ], 0, 3 );
