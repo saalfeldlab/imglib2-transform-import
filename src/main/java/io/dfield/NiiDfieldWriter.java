@@ -1,43 +1,82 @@
 package io.dfield;
 
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+
+import ij.ImagePlus;
 import io.nii.NiftiHeader;
+import io.nii.NiftiIo;
+import loci.formats.FormatException;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.Img;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Util;
 
 public class NiiDfieldWriter extends AbstractDfieldWriter
 {
 	public boolean little_endian = false;	// Change this to force little endian output 
-	
+
 	public static final int ANALYZE_7_5 = 0; 
 	public static final int NIFTI_ANALYZE = 1; 
 	public static final int NIFTI_FILE = 2; 
 
-	private boolean signed16Bit = false; 
-	
+	private boolean signed16Bit = false;
 
+	public static void main( String[] args ) throws FormatException, IOException
+	{
+		
+		String fin  = "/groups/saalfeld/home/bogovicj/tmp/testDfieldConv/realDfield.nii";
+		String fout = "/groups/saalfeld/home/bogovicj/tmp/testDfieldConv/realDfield_out.nii";
+		
+		ImagePlus ip = NiftiIo.readNifti(new File( fin ));
+//		ImagePlus ip = NiftiIo.readNifti(new File("/groups/saalfeld/home/bogovicj/tmp/testDfieldConv/dfield.nii"));
+		System.out.println( ip );
+
+		Img<FloatType> dfield = ImageJFunctions.convertFloat( ip );		
+		System.out.println( "dfield: " + Util.printInterval( dfield ));
+
+		FileOutputStream outStream = new FileOutputStream( fout );
+		NiiDfieldWriter writer = new NiiDfieldWriter();
+		writer.unit = "micron";
+		writer.pixel_spacing = new double[]{1,1,1};
+		
+		writer.writeHeader( outStream, dfield );
+		
+		int n = writeRaw( outStream, dfield );
+		outStream.flush();
+		outStream.close();
+		
+		System.out.println( "wrote " + n + " bytes" );
+	}
 
 	@Override
 	public <T extends RealType<T>> int write(OutputStream out, RandomAccessibleInterval<T> dfield) throws IOException
 	{
+		// TODO fix this
 		return 0;
 	}
 
+	/**
+	 * The last dimension of the volume stores vector components
+	 */
 	@Override
 	public int vectorDimension()
 	{
 		return -1;
 	}
-	
+
 	public <T extends RealType<T>> int writeHeader( OutputStream out, RandomAccessibleInterval<T> dfield ) throws IOException
 	{
 		DataOutputStream dout = new DataOutputStream(out);
 		writeHeader( dout, dfield, unit, Float.MAX_VALUE, Float.MAX_VALUE, NIFTI_FILE );
 		dout.flush();
-		dout.close();
+//		dout.close();
 		return dout.size();
 	}
 
@@ -81,8 +120,8 @@ public class NiiDfieldWriter extends AbstractDfieldWriter
 		
 		for (i = 0; i < 8; i++) writeShort( output, dims[i] );		// dim[0-7]
 
-		writeFloat( output, 0.0 );	//		intent_p1 	
-		writeFloat( output, 0.0 );	//		intent_p2 	
+		writeFloat( output, 0.0 );	//		intent_p1
+		writeFloat( output, 0.0 );	//		intent_p2
 		writeFloat( output, 0.0 );	//		intent_p3
 		
 		// "displacement intent code" 
@@ -268,3 +307,4 @@ public class NiiDfieldWriter extends AbstractDfieldWriter
 		}
 	}
 }
+

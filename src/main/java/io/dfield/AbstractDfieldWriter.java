@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
@@ -72,9 +73,34 @@ public abstract class AbstractDfieldWriter
 			dout.writeFloat( c.get().getRealFloat() );
 		}
 		dout.flush();
-		dout.close();
+//		dout.close();
 
 		return dout.size();
+	}
+
+	/**
+	 * Finds a permutation (inverse) transformation from a target space to source space
+	 * given axis labels encoded as strings.
+	 * 
+	 * The strings should be of the form 'XYZCT', where the ith character
+	 * indicates 
+	 * 
+	 * @param srcAxes axis labels for the source image as a string
+	 * @param tgtAxes axis labels for the source image as a string
+	 * @return the coordMaping
+	 */
+	public static int[]  generatePermutation( 
+			final String srcAxes,
+			final String tgtAxes )
+	{
+
+		int[] coordMapping = new int[ tgtAxes.length() ];
+		for( int i = 0; i < srcAxes.length(); i++ )
+		{
+			coordMapping[ i ] = tgtAxes.indexOf( srcAxes.charAt( i ));
+		}
+
+		return coordMapping;
 	}
 	
 }
