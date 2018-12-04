@@ -3,6 +3,7 @@ package net.imglib2.realtransform.ants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
@@ -81,11 +82,22 @@ public class ANTSDeformationField implements InvertibleRealTransform
 		System.out.println( "lastDim: " + lastDim );
 		System.out.println( "numDimOut: " + numDimOut );
 		
+		final FloatType NAN = new FloatType( Float.NaN );
+		
 		defInterval = def;
 		if( resolution == null )
 		{
+//			defField = Views.interpolate( 
+//					Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >());
+			
+//			System.out.println( "extend NAN ");
+//			defField = Views.interpolate( 
+//					Views.extendValue( def, NAN ), new NLinearInterpolatorFactory< FloatType >());
+
+			System.out.println( "extend Border ");
 			defField = Views.interpolate( 
-					Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >());
+					Views.extendBorder( def ), new NLinearInterpolatorFactory< FloatType >());
+			
 //			defFieldAccess = defField.realRandomAccess();
 		}
 		else
@@ -95,9 +107,20 @@ public class ANTSDeformationField implements InvertibleRealTransform
 			scaleXfm.set( resolution[ 1 ], 1, 1 );
 			scaleXfm.set( resolution[ 2 ], 2, 2 );
 
+//			defField= RealViews.transform(
+//					Views.interpolate( Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >()),
+//					new AffineTransform4DRepeated3D( scaleXfm ));
+			
+//			System.out.println( "extend NAN ");
+//			defField= RealViews.transform(
+//					Views.interpolate( Views.extendValue( def, NAN ), new NLinearInterpolatorFactory< FloatType >()),
+//					new AffineTransform4DRepeated3D( scaleXfm ));
+
+			System.out.println( "extend Border ");
 			defField= RealViews.transform(
-					Views.interpolate( Views.extendZero( def ), new NLinearInterpolatorFactory< FloatType >()),
+					Views.interpolate( Views.extendBorder( def ), new NLinearInterpolatorFactory< FloatType >()),
 					new AffineTransform4DRepeated3D( scaleXfm ));
+			
 		}
 	}
 	
@@ -200,22 +223,19 @@ public class ANTSDeformationField implements InvertibleRealTransform
 	@Override
 	public void apply( double[] source, double[] target )
 	{
-		// TODO Auto-generated method stub
-		
+		applyInverse( target, source );
 	}
 
 	@Override
 	public void apply( float[] source, float[] target )
 	{
-		// TODO Auto-generated method stub
-		
+		applyInverse( target, source );
 	}
 
 	@Override
 	public void apply( RealLocalizable source, RealPositionable target )
 	{
-		// TODO Auto-generated method stub
-		
+		applyInverse( target, source );
 	}
 	
 	@Override
@@ -226,6 +246,26 @@ public class ANTSDeformationField implements InvertibleRealTransform
 			defFieldAccess.setPosition( target[ d ], d);
 
 		defFieldAccess.setPosition( 0.0, lastDim );
+		
+//		boolean isOutOfBounds = false;
+//		for( int d = 0; d < numDimOut; d++ )
+//		{
+//			defFieldAccess.setPosition( d, lastDim );
+//			if( Double.isNaN( defFieldAccess.get().getRealDouble() ))
+//			{
+//				isOutOfBounds = true;
+//				break;
+//			}
+//		}
+//		
+//		if( isOutOfBounds )
+//		{
+//			System.out.println( "nan");
+//			for( int d = 0; d < numDimOut; d++ )
+//				source[ d ] = 0.0;
+//			
+//			return;
+//		}
 		
 		System.arraycopy( target, 0, source, 0, source.length );
 		for( int d = 0; d < numDimOut; d++ )
@@ -246,6 +286,15 @@ public class ANTSDeformationField implements InvertibleRealTransform
 			defFieldAccess.setPosition( target[ d ], d);
 
 		defFieldAccess.setPosition( 0.0, lastDim );
+		
+//		if( Double.isNaN( defFieldAccess.get().getRealDouble() ))
+//		{
+//			System.out.println( "nan");
+//			for( int d = 0; d < numDimOut; d++ )
+//				source[ d ] = 0.0f;
+//			
+//			return;
+//		}
 		
 		System.arraycopy( target, 0, source, 0, source.length );
 		for( int d = 0; d < numDimOut; d++ )
@@ -271,6 +320,15 @@ public class ANTSDeformationField implements InvertibleRealTransform
 //				target.getDoublePosition( 2 ),
 //				0
 //		}); 
+		
+//		if( Double.isNaN( defFieldAccess.get().getRealDouble() ))
+//		{
+//			System.out.println( "nan");
+//			for( int d = 0; d < numDimOut; d++ )
+//				source.setPosition( 0.0, d );
+//
+//			return;
+//		}
 		
 		double[] newpos = new double[ 3 ];
 		for( int d = 0; d < numDimOut; d++ )
